@@ -85,19 +85,17 @@ class GeneratePayDatesCSV extends Command
 
         if ($date) {
             // Correct date format = d/m/Y
-            if (preg_match("/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$/",$date)) {
-                $this->options['date'] = $date;
+            if (preg_match("/^[0-9]{2}\/[0-9]{2}\/[0-9]{4}$/", $date)) {
+                $this->options['date'] = Carbon::createFromFormat('d/m/Y', $date);
             } else {
                 $new_date = preg_replace('/[^a-z\/0-9]+/i', '', $date);
                 $new_date = @Carbon::parse($new_date);
 
-                if ($new_date) {
-                    $new_date = $new_date->format('d/m/Y');
-                } else {
-                    $new_date = (new Carbon)->format('d/m/Y');
+                if (!$new_date) {
+                    $new_date = new Carbon;
                 }
 
-                $correct = $this->confirm('That date is not valid, did you mean "' . $new_date . '"?');
+                $correct = $this->confirm('That date is not valid, did you mean "' . $new_date->format('d/m/Y') . '"?');
                 
                 if ($correct) {
                     $this->options['date'] = $new_date;
@@ -228,7 +226,7 @@ class GeneratePayDatesCSV extends Command
      */
     private function getStartDate() : Carbon
     {
-        return new Carbon;
+        return $this->options['date'];
     }
 
     /**
