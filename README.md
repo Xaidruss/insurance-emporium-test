@@ -25,3 +25,8 @@ Output:
 	 - Month
 	 - Base Payment Date
      - Bonus Payment Date
+
+To Run:
+	To run this application navigate to the root "insurance-emporium-test" folder in bash or terminal and run the command: 
+		"php artisan generate:pay-dates-csv"
+	This will run the csv generator script. Options & Arguments can be given as described above to chaneg the content & formatting of the output csv.
