@@ -12,7 +12,7 @@ class GeneratePayDatesCSV extends Command
      *
      * @var string
      */
-    protected $signature = 'generate:pay-dates-csv';
+    protected $signature = 'generate:pay-dates-csv {file_path?}';
 
     /**
      * The console command description.
@@ -20,6 +20,13 @@ class GeneratePayDatesCSV extends Command
      * @var string
      */
     protected $description = 'Generates a CSV for Wage Pay Dates for the next 12 months.';
+
+    /**
+     * The overwiteable options provided for this command
+     * 
+     * @var array
+     */
+    protected $options = [];
 
     /**
      * Create a new command instance.
@@ -38,6 +45,9 @@ class GeneratePayDatesCSV extends Command
      */
     public function handle()
     {
+        // Process Input Options
+        $this->setCommandOptions();
+
         // Get Output Path
         $path = $this->getOutputPath();
 
@@ -47,7 +57,41 @@ class GeneratePayDatesCSV extends Command
         // Calculate Pay Dates
         $rows = $this->getPaymentDates($start_date);
 
-        dd($start_date, $path, $rows);
+        // Add headers to data array
+        array_unshift($rows, [
+            'Month',
+            'Base Payment Date',
+            'Bonus Payment Date'
+        ]);
+
+        // Add data to csv at $path
+        $this->addDataToCSV($rows, $path);
+    }
+
+    private function setCommandOptions() : void
+    {
+        $file_path = $this->argument('file_path');
+
+        if ($file_path) {
+            $this->options['file_path'] = $this->argument('file_path');
+        } else {
+            $this->options['file_path'] = base_path() . DIRECTORY_SEPARATOR . 'output.csv';
+        }
+    }
+
+    private function addDataToCSV($rows, $path) : void
+    {
+        // Create file handle
+        $file = fopen($path, 'w+');
+
+        // Add data to file, lenght is calculated outside of for loop to improve speed
+        $length = count($rows);
+        for ($i = 0; $i < $length; $i++) {
+            fputcsv($file, $rows[$i]);
+        }
+
+        // Close file
+        fclose($file);
     }
 
     /**
@@ -67,9 +111,9 @@ class GeneratePayDatesCSV extends Command
         // Loop for $length and append to array using column names
         for ($i = 0; $i < $length; $i++) {
             $return[] = [
-                'month'               => $start_date->format('F Y'),
-                'base_payment_date'   => $this->getBasePaymentDate($start_date),
-                'bonues_payment_date' => $this->getBonusPaymentDate($start_date)
+                $start_date->format('F Y'),
+                $this->getBasePaymentDate($start_date),
+                $this->getBonusPaymentDate($start_date)
             ];
 
             $start_date->addMonth();
@@ -96,7 +140,7 @@ class GeneratePayDatesCSV extends Command
         $month = $date->format('n');
         while ($date->format('n') == $month) {
             $day_in_week_index = $date->format('N');
-
+            // Break if valid weekday
             if ($day_in_week_index >= 1 && $day_in_week_index <= 5) {
                 break;
             }
@@ -118,7 +162,28 @@ class GeneratePayDatesCSV extends Command
         // Carbon is mutable, so create clone for method to pevent global changes
         $date = clone $date;
 
-        return '';
+        // Set date to 10th
+        $date->setDay(10);
+
+        // if date on Saturday or Sunday find first Tuesday (index = 2)
+        $week_index = $date->format('N');
+        if ($week_index == 0 || $week_index == 6) {
+            // Required date is closer to beginning of month so set date to beginning of month
+            $date->startOfMonth();
+
+            // Get month to prevent infinite loop
+            $month = $date->format('n');
+            while ($date->format('n') == $month) {
+                // Break if tuesday
+                if ($date->format('N') == 2) {
+                    break;
+                }
+
+                $date->addDay();
+            }
+        }
+
+        return $date->format('jS F Y');
     }
 
     /**
@@ -136,6 +201,11 @@ class GeneratePayDatesCSV extends Command
      */
     private function getOutputPath() : string
     {
-        return base_path();
+        // Check for directory
+        if (is_dir($this->options['file_path'])) {
+            return $this->options['file_path'] . DIRECTORY_SEPARATOR . 'output.csv';
+        } else {
+            return $this->options['file_path'];
+        }
     }
 }
