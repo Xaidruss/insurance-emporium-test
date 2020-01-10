@@ -76,6 +76,8 @@ class GeneratePayDatesCSV extends Command
 
         // Add data to csv at $path
         $this->fileHandler->addDataToCSV($rows, $path);
+
+        $this->info('CSV Saved to: ' . $path);
     }
 
     /**

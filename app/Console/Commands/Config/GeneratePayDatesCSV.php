@@ -81,7 +81,7 @@ class GeneratePayDatesCSV {
             $this->options['date_format'] = 'jS F Y';
         }
 
-        $length = $this->command->option('length');
+        $length = (int)$this->command->option('length');
         
         if ($length) {
             $this->options['length'] = $length;
