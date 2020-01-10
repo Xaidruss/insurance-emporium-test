@@ -12,7 +12,7 @@ class GeneratePayDatesCSV extends Command
      *
      * @var string
      */
-    protected $signature = 'generate:pay-dates-csv {file_path?}';
+    protected $signature = 'generate:pay-dates-csv {file_path?} {--D|date=""}';
 
     /**
      * The console command description.
@@ -68,6 +68,9 @@ class GeneratePayDatesCSV extends Command
         $this->addDataToCSV($rows, $path);
     }
 
+    /**
+     * Set command options using optional arguments
+     */
     private function setCommandOptions() : void
     {
         $file_path = $this->argument('file_path');
@@ -77,9 +80,42 @@ class GeneratePayDatesCSV extends Command
         } else {
             $this->options['file_path'] = base_path() . DIRECTORY_SEPARATOR . 'output.csv';
         }
+
+        $date = $this->option('date');
+
+        if ($date) {
+            // Correct date format = d/m/Y
+            if (preg_match("/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$/",$date)) {
+                $this->options['date'] = $date;
+            } else {
+                $new_date = preg_replace('/[^a-z\/0-9]+/i', '', $date);
+                $new_date = @Carbon::parse($new_date);
+
+                if ($new_date) {
+                    $new_date = $new_date->format('d/m/Y');
+                } else {
+                    $new_date = (new Carbon)->format('d/m/Y');
+                }
+
+                $correct = $this->confirm('That date is not valid, did you mean "' . $new_date . '"?');
+                
+                if ($correct) {
+                    $this->options['date'] = $new_date;
+                } else {
+                    exit;
+                }
+            }
+        } else {
+            $date = new Carbon;
+        }
     }
 
-    private function addDataToCSV($rows, $path) : void
+    /**
+     * Add data to selected output file, will overwrite current file
+     * @param array $rows  Data to be added
+     * @param string $path Path to file
+     */
+    private function addDataToCSV(array $rows, string $path) : void
     {
         // Create file handle
         $file = fopen($path, 'w+');
