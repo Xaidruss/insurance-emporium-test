@@ -58,7 +58,7 @@ class GeneratePayDatesCSV extends Command
      */
     private function getPaymentDates(Carbon $start_date, int $length = 12) : array
     {
-        // Carbon is mutable, so create clone for method
+        // Carbon is mutable, so create clone for method to pevent global changes
         $start_date = clone $start_date;
 
         // Default return array
@@ -69,7 +69,7 @@ class GeneratePayDatesCSV extends Command
             $return[] = [
                 'month'               => $start_date->format('F Y'),
                 'base_payment_date'   => $this->getBasePaymentDate($start_date),
-                'bonues_paymnet_date' => $this->getBonusPaymentDate($start_date)
+                'bonues_payment_date' => $this->getBonusPaymentDate($start_date)
             ];
 
             $start_date->addMonth();
@@ -79,13 +79,46 @@ class GeneratePayDatesCSV extends Command
     }
 
     /**
-     * [getBasePaymentDate description]
-     * @param  Carbon $date [description]
-     * @return [type]       [description]
+     * Get base payment date for month, base payment is on the last working day
+     * of month where working days are Monday - Friday.
+     * @param  Carbon $date Carbon date of selected month
+     * @return string       Formatted date of base payment date
      */
-    private function getBasePaymentDate(Carbon $date) : 
+    private function getBasePaymentDate(Carbon $date) : string
     {
+        // Carbon is mutable, so create clone for method to pevent global changes
+        $date = clone $date;
 
+        // Set cloned date to end of month
+        $date->endOfMonth();
+
+        // Get month to prevent infinite loop
+        $month = $date->format('n');
+        while ($date->format('n') == $month) {
+            $day_in_week_index = $date->format('N');
+
+            if ($day_in_week_index >= 1 && $day_in_week_index <= 5) {
+                break;
+            }
+
+            $date->subDay();
+        }
+
+        // Format date
+        return $date->format('jS F Y');
+    }
+
+    /**
+     * Get bonus payment date for month
+     * @param  Carbon $date Carbon date of selected month
+     * @return string       Formatted date of bonus payment date
+     */
+    private function getBonusPaymentDate(Carbon $date) : string
+    {
+        // Carbon is mutable, so create clone for method to pevent global changes
+        $date = clone $date;
+
+        return '';
     }
 
     /**
