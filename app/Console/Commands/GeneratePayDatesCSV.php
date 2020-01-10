@@ -14,7 +14,7 @@ class GeneratePayDatesCSV extends Command
      *
      * @var string
      */
-    protected $signature = 'generate:pay-dates-csv {file_path?} {--D|date=""}';
+    protected $signature = 'generate:pay-dates-csv {file_path?} {--D|date=} {--F|format=} {--L|length=}';
 
     /**
      * The console command description.
@@ -24,13 +24,16 @@ class GeneratePayDatesCSV extends Command
     protected $description = 'Generates a CSV for Wage Pay Dates for the next 12 months.';
 
     /**
-     * The overwiteable options provided for this command
-     * 
-     * @var array
+     * Config Object
+     * @var \App\Console\Commands\Config\GeneratePayDatesCSV
      */
-    protected $options = [];
-
     private $config;
+
+    /**
+     * File Handler Object
+     * @var \App\Console\Commands\File\GeneratePayDatesCSV
+     */
+    private $fileHandler;
 
     /**
      * Create a new command instance.
@@ -62,7 +65,7 @@ class GeneratePayDatesCSV extends Command
         $start_date = $this->getStartDate();
         
         // Calculate Pay Dates
-        $rows = $this->getPaymentDates($start_date);
+        $rows = $this->getPaymentDates($start_date, $this->config->getOption('length'));
 
         // Add headers to data array
         array_unshift($rows, [
@@ -81,7 +84,7 @@ class GeneratePayDatesCSV extends Command
      * @param  int|integer $length     Number of months to calculate
      * @return array                   Array of payment dates
      */
-    private function getPaymentDates(Carbon $start_date, int $length = 12) : array
+    private function getPaymentDates(Carbon $start_date, int $length) : array
     {
         // Carbon is mutable, so create clone for method to pevent global changes
         $start_date = clone $start_date;
@@ -130,7 +133,7 @@ class GeneratePayDatesCSV extends Command
         }
 
         // Format date
-        return $date->format('jS F Y');
+        return $date->format($this->config->getOption('date_format'));
     }
 
     /**
@@ -164,7 +167,7 @@ class GeneratePayDatesCSV extends Command
             }
         }
 
-        return $date->format('jS F Y');
+        return $date->format($this->config->getOption('date_format'));
     }
 
     /**

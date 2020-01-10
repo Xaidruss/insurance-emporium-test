@@ -6,8 +6,23 @@ use Carbon\Carbon;
 use App\Console\Commands\GeneratePayDatesCSV as Command;
 
 class GeneratePayDatesCSV {
+    /**
+     * The Command being run
+     * @var \App\Console\Commands\GeneratePayDatesCSV
+     */
 	private $command;
 
+    /**
+     * The options provided for this command
+     * 
+     * @var array
+     */
+    protected $options = [];
+
+    /**
+     * Setup Config object
+     * @param Command $command The command being run
+     */
 	public function __construct(Command $command)
 	{
 		$this->command = $command;
@@ -55,7 +70,23 @@ class GeneratePayDatesCSV {
             }
         } else {
             // Provides default of current date
-            $date = new Carbon;
+            $this->options['date'] = new Carbon;
+        }
+
+        $format = $this->command->option('format');
+        
+        if ($format) {
+            $this->options['date_format'] = $format;
+        } else {
+            $this->options['date_format'] = 'jS F Y';
+        }
+
+        $length = $this->command->option('length');
+        
+        if ($length) {
+            $this->options['length'] = $length;
+        } else {
+            $this->options['length'] = 12;
         }
     }
 
