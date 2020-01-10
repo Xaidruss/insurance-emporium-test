@@ -47,7 +47,7 @@ class GeneratePayDatesCSV extends Command
         // Calculate Pay Dates
         $rows = $this->getPaymentDates($start_date);
 
-        dd($start_date, $path);
+        dd($start_date, $path, $rows);
     }
 
     /**
@@ -58,7 +58,34 @@ class GeneratePayDatesCSV extends Command
      */
     private function getPaymentDates(Carbon $start_date, int $length = 12) : array
     {
-        
+        // Carbon is mutable, so create clone for method
+        $start_date = clone $start_date;
+
+        // Default return array
+        $return = [];
+
+        // Loop for $length and append to array using column names
+        for ($i = 0; $i < $length; $i++) {
+            $return[] = [
+                'month'               => $start_date->format('F Y'),
+                'base_payment_date'   => $this->getBasePaymentDate($start_date),
+                'bonues_paymnet_date' => $this->getBonusPaymentDate($start_date)
+            ];
+
+            $start_date->addMonth();
+        }
+
+        return $return;
+    }
+
+    /**
+     * [getBasePaymentDate description]
+     * @param  Carbon $date [description]
+     * @return [type]       [description]
+     */
+    private function getBasePaymentDate(Carbon $date) : 
+    {
+
     }
 
     /**
