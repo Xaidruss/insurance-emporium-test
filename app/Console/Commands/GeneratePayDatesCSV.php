@@ -4,6 +4,8 @@ namespace App\Console\Commands;
 
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use App\Console\Commands\Config\GeneratePayDatesCSV as Config;
+use App\Console\Commands\File\GeneratePayDatesCSV as FileHandler;
 
 class GeneratePayDatesCSV extends Command
 {
@@ -28,6 +30,8 @@ class GeneratePayDatesCSV extends Command
      */
     protected $options = [];
 
+    private $config;
+
     /**
      * Create a new command instance.
      *
@@ -36,6 +40,9 @@ class GeneratePayDatesCSV extends Command
     public function __construct()
     {
         parent::__construct();
+
+        $this->config = new Config($this);
+        $this->fileHandler = new FileHandler();
     }
 
     /**
@@ -46,7 +53,7 @@ class GeneratePayDatesCSV extends Command
     public function handle()
     {
         // Process Input Options
-        $this->setCommandOptions();
+        $this->config->setCommandOptions();
 
         // Get Output Path
         $path = $this->getOutputPath();
@@ -65,67 +72,7 @@ class GeneratePayDatesCSV extends Command
         ]);
 
         // Add data to csv at $path
-        $this->addDataToCSV($rows, $path);
-    }
-
-    /**
-     * Set command options using optional arguments
-     */
-    private function setCommandOptions() : void
-    {
-        $file_path = $this->argument('file_path');
-
-        if ($file_path) {
-            $this->options['file_path'] = $this->argument('file_path');
-        } else {
-            $this->options['file_path'] = base_path() . DIRECTORY_SEPARATOR . 'output.csv';
-        }
-
-        $date = $this->option('date');
-
-        if ($date) {
-            // Correct date format = d/m/Y
-            if (preg_match("/^[0-9]{2}\/[0-9]{2}\/[0-9]{4}$/", $date)) {
-                $this->options['date'] = Carbon::createFromFormat('d/m/Y', $date);
-            } else {
-                $new_date = preg_replace('/[^a-z\/0-9]+/i', '', $date);
-                $new_date = @Carbon::parse($new_date);
-
-                if (!$new_date) {
-                    $new_date = new Carbon;
-                }
-
-                $correct = $this->confirm('That date is not valid, did you mean "' . $new_date->format('d/m/Y') . '"?');
-                
-                if ($correct) {
-                    $this->options['date'] = $new_date;
-                } else {
-                    exit;
-                }
-            }
-        } else {
-            $date = new Carbon;
-        }
-    }
-
-    /**
-     * Add data to selected output file, will overwrite current file
-     * @param array $rows  Data to be added
-     * @param string $path Path to file
-     */
-    private function addDataToCSV(array $rows, string $path) : void
-    {
-        // Create file handle
-        $file = fopen($path, 'w+');
-
-        // Add data to file, lenght is calculated outside of for loop to improve speed
-        $length = count($rows);
-        for ($i = 0; $i < $length; $i++) {
-            fputcsv($file, $rows[$i]);
-        }
-
-        // Close file
-        fclose($file);
+        $this->fileHandler->addDataToCSV($rows, $path);
     }
 
     /**
@@ -226,7 +173,7 @@ class GeneratePayDatesCSV extends Command
      */
     private function getStartDate() : Carbon
     {
-        return $this->options['date'];
+        return $this->config->getOption('date');
     }
 
     /**
@@ -236,10 +183,10 @@ class GeneratePayDatesCSV extends Command
     private function getOutputPath() : string
     {
         // Check for directory
-        if (is_dir($this->options['file_path'])) {
-            return $this->options['file_path'] . DIRECTORY_SEPARATOR . 'output.csv';
+        if (is_dir($this->config->getOption('file_path'))) {
+            return $this->config->getOption('file_path') . DIRECTORY_SEPARATOR . 'output.csv';
         } else {
-            return $this->options['file_path'];
+            return $this->config->getOption('file_path');
         }
     }
 }
